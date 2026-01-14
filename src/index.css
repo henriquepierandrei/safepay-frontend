@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+:root {
+    /* Cores Personalizáveis */
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #141414;
+    --color-bg-tertiary: #1c1c1e;
+
+    --color-glass-bg: rgba(255, 255, 255, 0.05);
+    --color-glass-border: rgba(255, 255, 255, 0.1);
+    --color-glass-shadow: rgba(0, 0, 0, 0.3);
+
+    --color-text-primary: #ffffff;
+    --color-text-secondary: rgba(255, 255, 255, 0.7);
+    --color-text-tertiary: rgba(255, 255, 255, 0.5);
+
+    --color-accent: #0a84ff;
+    --color-accent-hover: #409cff;
+    --color-accent-glow: rgba(10, 132, 255, 0.4);
+
+    --color-error: #ff453a;
+    --color-error-glow: rgba(255, 69, 58, 0.3);
+
+    /* Gradientes */
+    --gradient-mesh: radial-gradient(at 40% 20%, rgba(10, 132, 255, 0.15) 0px, transparent 50%),
+        radial-gradient(at 80% 0%, rgba(120, 119, 198, 0.1) 0px, transparent 50%),
+        radial-gradient(at 0% 50%, rgba(255, 69, 58, 0.08) 0px, transparent 50%),
+        radial-gradient(at 80% 50%, rgba(10, 132, 255, 0.1) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(120, 119, 198, 0.1) 0px, transparent 50%);
+
+    /* Border Radius */
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 28px;
+    --radius-xl: 44px;
+
+    /* Transitions */
+    --transition-fast: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-medium: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-slow: 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
