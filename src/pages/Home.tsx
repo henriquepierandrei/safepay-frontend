@@ -21,11 +21,11 @@ function Home() {
 
       {/* Hero Section */}
       <HeroSection 
-        title="Simulação na prática"
-        subtitle="sistema antifraude para Cartões de Crédito"
+        title="Simulação sistema antifraude"
+        subtitle=" para Cartões de Crédito"
         description="Entenda através desse projeto como grandes empresas constroem sistemas de detecção de fraudes em tempo real utilizando técnicas de Análise de dados e Machine Learning."
-        primaryButtonText="Get Started"
-        secondaryButtonText="Learn More"
+        primaryButtonText="Testar Agora"
+        secondaryButtonText="Documentação"
         onPrimaryClick={handlePrimaryClick}
         onSecondaryClick={handleSecondaryClick}
       />

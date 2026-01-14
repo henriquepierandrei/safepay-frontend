@@ -211,11 +211,6 @@ const Navbar: React.FC<NavbarProps> = ({
       icon: <Briefcase className="w-5 h-5" />
     },
     { 
-      label: 'Contact', 
-      href: '#contact', 
-      icon: <Mail className="w-5 h-5" />
-    },
-    { 
       label: 'About', 
       href: '#about', 
       icon: <User className="w-5 h-5" />

@@ -134,7 +134,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, navItems, onClose }) =>
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-emerald-800/20">
             <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-400/90 via-emerald-300/80 to-emerald-500/90 bg-clip-text text-transparent">
-              Menu
+              <img src={Logo} alt="Logo" className="w-25 h-8" />
             </span>
             <button
               onClick={onClose}
@@ -211,11 +211,6 @@ const Navbar: React.FC<NavbarProps> = ({
       label: 'GitHub', 
       href: 'https://github.com/henriquepierandrei/safepay', 
       icon: <Github className="w-5 h-5" />
-    },
-    { 
-      label: 'Contact', 
-      href: '/contact', 
-      icon: <Mail className="w-5 h-5" />
     },
     { 
       label: 'Docs', 

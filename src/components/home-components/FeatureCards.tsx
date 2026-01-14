@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Zap, Shield, Sparkles, Rocket, Target } from 'lucide-react';
+import { CreditCard, Shield, Clock, Globe, AlertCircle, Lightbulb, Layers } from 'lucide-react';
 
 interface Feature {
   id: number;
@@ -15,39 +15,39 @@ interface FeatureCardsProps {
 const defaultFeatures: Feature[] = [
   {
     id: 1,
-    title: 'Fast Performance',
-    description: 'Modern design with smooth animations and responsive layout for all devices',
-    icon: <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
-  },
-  {
-    id: 2,
-    title: 'Secure & Safe',
-    description: 'Built with security best practices and modern encryption standards',
+    title: 'Criptografia EMV',
+    description: 'Os chips dos cartões utilizam criptografia EMV, impossibilitando a clonagem através de tecnologia avançada',
     icon: <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
   },
   {
+    id: 2,
+    title: 'CVV Dinâmico',
+    description: 'Alguns cartões modernos geram um novo código CVV a cada transação, aumentando drasticamente a segurança',
+    icon: <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
+  },
+  {
     id: 3,
-    title: 'Beautiful UI',
-    description: 'Stunning glassmorphism design with dark mode and smooth transitions',
-    icon: <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
+    title: 'Pagamento em 3 Segundos',
+    description: 'Transações contactless são processadas em média em apenas 3 segundos, 10x mais rápido que inserir o chip',
+    icon: <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
   },
   {
     id: 4,
-    title: 'Easy to Use',
-    description: 'Intuitive interface designed for the best user experience possible',
-    icon: <Target className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
+    title: 'Aceito Mundialmente',
+    description: 'Mais de 200 países e territórios aceitam cartões Visa e Mastercard, facilitando viagens internacionais',
+    icon: <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
   },
   {
     id: 5,
-    title: 'Blazing Fast',
-    description: 'Optimized performance with cutting-edge technology and architecture',
-    icon: <Rocket className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
+    title: 'Proteção Contra Fraudes',
+    description: 'Bancos monitoram transações 24/7 com IA detectando padrões suspeitos e bloqueando compras fraudulentas',
+    icon: <AlertCircle className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
   },
   {
     id: 6,
-    title: 'Fully Responsive',
-    description: 'Works perfectly on mobile, tablet, desktop and all screen sizes',
-    icon: <Layers className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
+    title: 'Número Mágico',
+    description: 'Os primeiros 6 dígitos identificam o banco emissor, enquanto o último dígito é calculado pelo Algoritmo de Luhn',
+    icon: <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400/80" />
   }
 ];
 
@@ -59,11 +59,11 @@ const FeatureCards: React.FC<FeatureCardsProps> = ({ features = defaultFeatures 
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-emerald-400/90 via-emerald-300/80 to-emerald-500/90 bg-clip-text text-transparent">
-              Amazing Features
+              Curiosidades sobre Cartões
             </span>
           </h2>
           <p className="text-base sm:text-lg text-emerald-200/50 max-w-2xl mx-auto">
-            Discover what makes our platform stand out from the rest
+            Descubra fatos fascinantes sobre a tecnologia por trás dos seus cartões de crédito
           </p>
         </div>
 
