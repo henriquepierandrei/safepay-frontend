@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import NotFound from './pages/notfound-page/NotFound';
 import CardBlockingRules from './pages/docs-page/CardBlockingRules';
+import TransactionsPage from './pages/transactions-page/TransactionsPage';
 
 
 function App() {
@@ -12,6 +13,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/docs" element={<CardBlockingRules />} />
+        <Route path="/transactions" element={<TransactionsPage />} />
+
         <Route path="*" element={<NotFound/>} />
       </Routes>
     </BrowserRouter>
