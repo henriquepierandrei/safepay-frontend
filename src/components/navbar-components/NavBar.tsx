@@ -193,18 +193,18 @@ const Navbar: React.FC<NavbarProps> = ({
   const defaultNavItems: NavItem[] = [
     { 
       label: 'Home', 
-      href: '#home', 
+      href: '/', 
       icon: <Home className="w-5 h-5" />,
       badge: 'New'
     },
     { 
       label: 'Features', 
-      href: '/', 
+      href: '', 
       icon: <Layers className="w-5 h-5" />,
       submenu: [
         { label: 'Dashboard', icon: <LineChart width={18}/>, href: '/dashboard' },
-        { label: 'Transações', icon: <MonitorCog />, href: '#development' },
-        { label: 'Alertas', icon: <AlertCircle />, href: '#consulting' }
+        { label: 'Transações', icon: <MonitorCog />, href: '/transactions' },
+        { label: 'Alertas', icon: <AlertCircle />, href: '/alerts' }
       ]
     },
     { 

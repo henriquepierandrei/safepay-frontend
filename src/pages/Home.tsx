@@ -2,7 +2,6 @@ import Navbar from '../components/navbar-components/NavBar'
 import HeroSection from '../components/home-components/HeroSection'
 import FeatureCards from '../components/home-components/FeatureCards';
 import Logo from '../assets/logo.png';
-import GlobeComponent from '../components/transactions-components/Globe';
 
 function Home() {
   const handlePrimaryClick = () => {

@@ -14,6 +14,8 @@ import countriesGeoJson from '../../data/countries.geo.json'
 export type Transaction = {
   lat: number
   lng: number
+  cardBrand?: string
+  ipAddress?: string
   country?: string
   city?: string
 }
@@ -27,320 +29,249 @@ type GlobeProps = {
 /* -------------------------------------------------------------------------- */
 
 const EARTH_RADIUS = 2.5
-const CONTINENT_RADIUS = 2.505
-const TRANSACTION_RADIUS = 2.52
+const COUNTRY_RADIUS = 2.505
+const HOVER_RADIUS = 2.52
+const TRANSACTION_RADIUS = 2.55
 
 /* -------------------------------------------------------------------------- */
 /*                                   HELPERS                                  */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Converts latitude/longitude into a Vector3 on a sphere.
- */
 const geoToVector3 = (
   lat: number,
   lng: number,
-  radius: number = EARTH_RADIUS
+  radius: number
 ): THREE.Vector3 => {
   const phi = (90 - lat) * (Math.PI / 180)
   const theta = (lng + 180) * (Math.PI / 180)
 
   return new THREE.Vector3(
-    -(radius * Math.sin(phi) * Math.cos(theta)),
+    -radius * Math.sin(phi) * Math.cos(theta),
     radius * Math.cos(phi),
     radius * Math.sin(phi) * Math.sin(theta)
   )
 }
 
+const computeCentroid = (coords: number[][]) => {
+  let lat = 0
+  let lng = 0
+
+  coords.forEach(([cLng, cLat]) => {
+    lat += cLat
+    lng += cLng
+  })
+
+  return {
+    lat: lat / coords.length,
+    lng: lng / coords.length
+  }
+}
+
 /* -------------------------------------------------------------------------- */
-/*                                   LAYERS                                   */
+/*                                   EARTH                                    */
 /* -------------------------------------------------------------------------- */
 
-const EarthBase: React.FC = () => (
+const EarthBase = () => (
   <group>
-    {/* Solid sphere */}
+    {/* Base */}
     <mesh>
       <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
-      <meshBasicMaterial color="#000000" />
+      <meshStandardMaterial color="#020617" roughness={0.9} metalness={0.1} />
     </mesh>
 
-    {/* Grid de latitude - horizontal */}
+    {/* Grid moderna (lat/lng soft) */}
     <mesh>
-      <sphereGeometry args={[EARTH_RADIUS + 0.01, 64, 32]} />
+      <sphereGeometry args={[EARTH_RADIUS + 0.01, 96, 96]} />
       <meshBasicMaterial
         wireframe
-        color="#1a2332"
+        color="#333333"
         transparent
-        opacity={0.25}
-      />
-    </mesh>
-
-    {/* Grid de longitude - vertical */}
-    <mesh>
-      <sphereGeometry args={[EARTH_RADIUS + 0.012, 32, 64]} />
-      <meshBasicMaterial
-        wireframe
-        color="#1a2332"
-        transparent
-        opacity={0.2}
+        opacity={0.05}
       />
     </mesh>
   </group>
 )
 
 /* -------------------------------------------------------------------------- */
-/*                            CONTINENT POINTS                                */
+/*                              COUNTRY LINES                                 */
 /* -------------------------------------------------------------------------- */
 
-type ContinentPointProps = {
-  position: THREE.Vector3
-  lat: number
-  lng: number
-  country: string
-  onHoverChange: (hovering: boolean) => void
-}
+const CountryLines = () => {
+  const lines = useMemo(() => {
+    const elements: React.ReactNode[] = []
 
-const ContinentPoint: React.FC<ContinentPointProps> = ({
-  position,
-  lat,
-  lng,
-  country,
-  onHoverChange
-}) => {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return
-
-    const baseScale = hovered ? 1.5 : 1
-    const pulse = hovered ? Math.sin(clock.elapsedTime * 5) * 0.2 : 0
-
-    meshRef.current.scale.setScalar(baseScale + pulse)
-  })
-
-  const handlePointerOver = (e: any) => {
-    e.stopPropagation()
-    setHovered(true)
-    onHoverChange(true)
-  }
-
-  const handlePointerOut = () => {
-    setHovered(false)
-    onHoverChange(false)
-  }
-
-  return (
-    <group>
-      <mesh
-        ref={meshRef}
-        position={position}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      >
-        <sphereGeometry args={[0.012, 8, 8]} />
-        <meshBasicMaterial
-          color="#ffffff"
-          transparent
-          opacity={hovered ? 1 : 0.5}
-        />
-      </mesh>
-
-      {hovered && (
-        <Html 
-          position={position} 
-          center 
-          distanceFactor={8}
-          style={{
-            transition: 'all 0.2s ease-out',
-            pointerEvents: 'none'
-          }}
-        >
-          <div className="pointer-events-none select-none rounded border border-white/20 bg-black/90 px-3 py-2 backdrop-blur-sm">
-            <div className="space-y-1 font-mono text-[10px] text-white">
-              <div className="mb-1 border-b border-white/10 pb-1 uppercase tracking-tight text-gray-400">
-                {country}
-              </div>
-              <div>LAT: {lat.toFixed(4)}</div>
-              <div>LNG: {lng.toFixed(4)}</div>
-            </div>
-          </div>
-        </Html>
-      )}
-    </group>
-  )
-}
-
-const ContinentPoints: React.FC<{ onHoverChange: (hovering: boolean) => void }> = ({ onHoverChange }) => {
-  const points = useMemo(() => {
-    const result: Omit<ContinentPointProps, 'onHoverChange'>[] = []
-
-    countriesGeoJson.features.forEach((feature: any) => {
+    countriesGeoJson.features.forEach((feature: any, idx: number) => {
       const { coordinates, type } = feature.geometry
-      const country =
-        feature.properties?.name ||
-        feature.properties?.ADMIN ||
-        'Unknown'
 
-      const processPolygon = (polygon: any[]) => {
-        const STEP = 3
+      const build = (coords: number[][], key: string) => {
+        const points = coords.map(([lng, lat]) =>
+          geoToVector3(lat, lng, COUNTRY_RADIUS)
+        )
 
-        polygon[0].forEach((coord: number[], index: number) => {
-          if (index % STEP !== 0) return
+        const geometry = new THREE.BufferGeometry().setFromPoints(points)
 
-          const [lng, lat] = coord
-          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return
-
-          result.push({
-            position: geoToVector3(lat, lng, CONTINENT_RADIUS),
-            lat,
-            lng,
-            country
-          })
-        })
+        return (
+          <line key={key}>
+            <primitive object={geometry} attach="geometry" />
+            <lineBasicMaterial
+              color="white"
+              transparent
+              opacity={0.15}
+            />
+          </line>
+        )
       }
 
-      if (type === 'Polygon') processPolygon(coordinates)
-      if (type === 'MultiPolygon')
-        coordinates.forEach((poly: any) => processPolygon(poly))
+      if (type === 'Polygon') {
+        elements.push(build(coordinates[0], `p-${idx}`))
+      }
+
+      if (type === 'MultiPolygon') {
+        coordinates.forEach((poly: any, i: number) => {
+          elements.push(build(poly[0], `mp-${idx}-${i}`))
+        })
+      }
     })
 
-    return result
+    return elements
   }, [])
 
-  return (
-    <group>
-      {points.map((point, index) => (
-        <ContinentPoint key={index} {...point} onHoverChange={onHoverChange} />
-      ))}
-    </group>
-  )
+  return <group>{lines}</group>
 }
 
 /* -------------------------------------------------------------------------- */
-/*                           TRANSACTION MARKERS                              */
+/*                          COUNTRY HOVER CENTERS                              */
 /* -------------------------------------------------------------------------- */
 
-const TransactionMarker: React.FC<{
+
+
+
+/* -------------------------------------------------------------------------- */
+/*                            TRANSACTIONS                                    */
+/* -------------------------------------------------------------------------- */
+
+const TransactionMarker = ({
+  transaction,
+  index,
+  isSelected,
+  onSelect,
+  onClose
+}: {
   transaction: Transaction
   index: number
-  onHoverChange: (hovering: boolean) => void
-}> = ({ transaction, index, onHoverChange }) => {
-  const groupRef = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
+  isSelected: boolean
+  onSelect: () => void
+  onClose: () => void
+}) => {
+  const ref = useRef<THREE.Group>(null)
 
   const position = useMemo(
-    () => geoToVector3(transaction.lat, transaction.lng, TRANSACTION_RADIUS),
+    () =>
+      geoToVector3(
+        transaction.lat,
+        transaction.lng,
+        TRANSACTION_RADIUS
+      ),
     [transaction.lat, transaction.lng]
   )
 
   useFrame(({ clock }) => {
-    if (!groupRef.current) return
-
-    // Remove balanceamento quando hover
-    if (!hovered) {
-      groupRef.current.rotation.y = Math.sin(clock.elapsedTime * 2 + index) * 0.15
-    }
-
-    const targetScale = hovered ? 1.4 : 1
-    groupRef.current.scale.lerp(
-      new THREE.Vector3(targetScale, targetScale, targetScale),
-      0.1
-    )
+    if (!ref.current || isSelected) return
+    ref.current.rotation.y =
+      Math.sin(clock.elapsedTime * 2 + index) * 0.12
   })
 
-  const handlePointerOver = (e: any) => {
+  const handleClick = (e: any) => {
     e.stopPropagation()
-    setHovered(true)
-    onHoverChange(true)
-  }
-
-  const handlePointerOut = () => {
-    setHovered(false)
-    onHoverChange(false)
+    if (isSelected) {
+      onClose()
+    } else {
+      onSelect()
+    }
   }
 
   return (
     <group
-      ref={groupRef}
+      ref={ref}
       position={position}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
+      onClick={handleClick}
     >
-      <mesh position={[0, 0.1, 0]}>
-        <sphereGeometry args={[0.04, 16, 16]} />
-        <meshBasicMaterial color="#f43f5e" />
+
+      <mesh>
+        <sphereGeometry args={[0.015, 22, 22]} />
+        <meshBasicMaterial color={isSelected ? "#4ade80" : "#307355"} />
       </mesh>
 
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.07, 0.09, 32]} />
-        <meshBasicMaterial
-          color="#f43f5e"
-          transparent
-          opacity={0.6}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
 
-      {hovered && (
-        <Html 
-          position={position} 
-          center 
-          distanceFactor={10}
-          occlude
-          style={{
-            transition: 'all 0.2s ease-out',
-            pointerEvents: 'none',
-            transform: 'translate(-50%, -50%)'
-          }}
-        >
-          <div className="pointer-events-none select-none rounded-lg border border-rose-500/40 bg-gradient-to-br from-slate-900/98 to-slate-800/98 px-3 py-2 shadow-2xl backdrop-blur-md">
-            <div className="min-w-[160px] max-w-[180px] space-y-1.5">
-              <div className="flex items-center gap-1.5 border-b border-slate-700/60 pb-1.5">
-                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500"></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-rose-400">
-                  Transação
-                </span>
+
+      {isSelected && (
+        <Html center distanceFactor={4}>
+          <div
+            className="rounded-lg border border-white/10  backdrop-blur-sm px-4 py-3 text-white transition-all duration-500 ease-out min-w-[200px]"
+            style={{ pointerEvents: 'auto' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-md bg-gradient-to-br from-black to-emerald-950 flex items-center justify-center shadow-lg transition-transform duration-300 ease-out`}>
+                  <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[9px] text-gray-400 uppercase tracking-wider">Transação</div>
+                  <div className="text-xs font-semibold text-white uppercase">
+                    {transaction.cardBrand || 'MASTERCARD'}
+                  </div>
+                </div>
               </div>
 
-              {transaction.city && (
-                <div className="flex items-start gap-2">
-                  <span className="min-w-[45px] text-[9px] font-medium text-slate-400">
-                    Cidade:
-                  </span>
-                  <span className="text-[10px] font-semibold text-white leading-tight">
-                    {transaction.city}
-                  </span>
-                </div>
-              )}
+              {/* Close Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClose()
+                }}
+                className="w-6 h-6 rounded-full cursor-pointer hover:scale-120 flex items-center justify-center transition-all duration-200 hover:scale-110"
+              >
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-              {transaction.country && (
-                <div className="flex items-start gap-2">
-                  <span className="min-w-[45px] text-[9px] font-medium text-slate-400">
-                    País:
-                  </span>
-                  <span className="text-[10px] font-semibold text-white leading-tight">
-                    {transaction.country}
-                  </span>
-                </div>
-              )}
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-3" />
 
+            {/* Info */}
+            <div className="space-y-2">
+              {/* Coordenadas */}
               <div className="flex items-start gap-2">
-                <span className="min-w-[45px] text-[9px] font-medium text-slate-400">
-                  Lat:
-                </span>
-                <span className="font-mono text-[10px] font-semibold text-emerald-400">
-                  {transaction.lat.toFixed(4)}°
-                </span>
+                <svg className="w-3 h-3 text-rose-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] text-gray-400 mb-0.5">Coordenadas</div>
+                  <div className="text-[11px] font-mono">
+                    <span className="text-rose-300">{transaction.lat.toFixed(4)}</span>
+                    <span className="text-gray-500 mx-1">•</span>
+                    <span className="text-rose-300">{transaction.lng.toFixed(4)}</span>
+                  </div>
+                </div>
               </div>
 
+              {/* IP */}
               <div className="flex items-start gap-2">
-                <span className="min-w-[45px] text-[9px] font-medium text-slate-400">
-                  Lng:
-                </span>
-                <span className="font-mono text-[10px] font-semibold text-emerald-400">
-                  {transaction.lng.toFixed(4)}°
-                </span>
+                <svg className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] text-gray-400 mb-0.5">Endereço IP</div>
+                  <div className="text-[11px] font-mono text-blue-300 truncate">
+                    {transaction.ipAddress || 'N/A'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -351,18 +282,21 @@ const TransactionMarker: React.FC<{
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                GLOBE CORE                                  */
+/*                                 GLOBE                                      */
 /* -------------------------------------------------------------------------- */
 
-const RotatingGlobe: React.FC<React.PropsWithChildren<{ paused: boolean }>> = ({ 
-  children, 
-  paused 
+const RotatingGlobe = ({
+  paused,
+  children
+}: {
+  paused: boolean
+  children: React.ReactNode
 }) => {
   const ref = useRef<THREE.Group>(null)
 
   useFrame(() => {
     if (ref.current && !paused) {
-      ref.current.rotation.y += 0.001
+      ref.current.rotation.y += 0.00065
     }
   })
 
@@ -370,41 +304,75 @@ const RotatingGlobe: React.FC<React.PropsWithChildren<{ paused: boolean }>> = ({
 }
 
 const Globe: React.FC<GlobeProps> = ({ transactions }) => {
-  const [isHovering, setIsHovering] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [pausedManually, setPausedManually] = useState(false)
+
+  const hasSelection = selectedIndex !== null
+
+  const isMobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px)').matches
+
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-black">
+    <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-[#000000] via-[#111111] to-black">
+      {/* Grid animado de fundo */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_110%)]" />
+
+      {/* Glow spots */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px]" />
+
+      {/* Noise texture overlay */}
+      <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay" style={{
+        backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' /%3E%3C/svg%3E")'
+      }} />
       <Canvas
-        camera={{ position: [0, 0, 6], fov: 45 }}
-        gl={{ antialias: true }}
+        camera={{
+          position: isMobile ? [0, 0, 12] : [0, 0, 6],
+          fov: isMobile ? 55 : 45
+        }}
+        className="cursor-pointer"
       >
-        <color attach="background" args={['#000']} />
+
         <ambientLight intensity={1} />
 
-        <Suspense fallback={null}>
-          <RotatingGlobe paused={isHovering}>
-            <EarthBase />
-            <ContinentPoints onHoverChange={setIsHovering} />
 
-            {transactions.map((tx, index) => (
+
+        <Suspense fallback={null}>
+          <RotatingGlobe paused={hasSelection || pausedManually}>
+
+            <EarthBase />
+            <CountryLines />
+
+
+            {transactions.map((tx, i) => (
               <TransactionMarker
-                key={index}
+                key={i}
                 transaction={tx}
-                index={index}
-                onHoverChange={setIsHovering}
+                index={i}
+                isSelected={selectedIndex === i}
+                onSelect={() => setSelectedIndex(i)}
+                onClose={() => setSelectedIndex(null)}
               />
             ))}
           </RotatingGlobe>
         </Suspense>
 
         <OrbitControls
-          enableZoom
           enablePan={false}
           minDistance={3.5}
-          maxDistance={12}
-          autoRotate={false}
+          maxDistance={10}
         />
       </Canvas>
+      <button
+        onClick={() => setPausedManually((prev) => !prev)}
+        className="absolute bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md transition hover:bg-black/90"
+      >
+        {pausedManually ? 'Play' : 'Pause'}
+      </button>
+
     </div>
   )
 }
