@@ -64,14 +64,25 @@ const EarthBase: React.FC = () => (
       <meshBasicMaterial color="#000000" />
     </mesh>
 
-    {/* Wireframe grid - mais escuro */}
+    {/* Grid de latitude - horizontal */}
     <mesh>
-      <sphereGeometry args={[EARTH_RADIUS + 0.01, 32, 32]} />
+      <sphereGeometry args={[EARTH_RADIUS + 0.01, 64, 32]} />
       <meshBasicMaterial
         wireframe
-        color="#0f172a"
+        color="#1a2332"
         transparent
-        opacity={0.15}
+        opacity={0.25}
+      />
+    </mesh>
+
+    {/* Grid de longitude - vertical */}
+    <mesh>
+      <sphereGeometry args={[EARTH_RADIUS + 0.012, 32, 64]} />
+      <meshBasicMaterial
+        wireframe
+        color="#1a2332"
+        transparent
+        opacity={0.2}
       />
     </mesh>
   </group>
