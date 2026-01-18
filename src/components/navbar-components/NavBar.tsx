@@ -202,7 +202,6 @@ const Navbar: React.FC<NavbarProps> = ({
       href: '', 
       icon: <Layers className="w-5 h-5" />,
       submenu: [
-        { label: 'Dashboard', icon: <LineChart width={18}/>, href: '/dashboard' },
         { label: 'Transações', icon: <MonitorCog />, href: '/transactions' },
         { label: 'Alertas', icon: <AlertCircle />, href: '/alerts' }
       ]

@@ -4,6 +4,7 @@ import React, { Suspense, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Html } from '@react-three/drei'
 import * as THREE from 'three'
+import './GlobeStyle.css';
 
 import countriesGeoJson from '../../data/countries.geo.json'
 
@@ -84,9 +85,9 @@ const EarthBase = () => (
       <sphereGeometry args={[EARTH_RADIUS + 0.01, 96, 96]} />
       <meshBasicMaterial
         wireframe
-        color="#333333"
+        color="white"
         transparent
-        opacity={0.05}
+        opacity={0.01}
       />
     </mesh>
   </group>
@@ -316,6 +317,13 @@ const Globe: React.FC<GlobeProps> = ({ transactions }) => {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-[#000000] via-[#111111] to-black">
+      {/* Stars layer */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="stars" />
+        <div className="stars stars--medium" />
+        <div className="stars stars--big" />
+      </div>
+
       {/* Grid animado de fundo */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_110%)]" />
 
@@ -372,6 +380,7 @@ const Globe: React.FC<GlobeProps> = ({ transactions }) => {
       >
         {pausedManually ? 'Play' : 'Pause'}
       </button>
+
 
     </div>
   )

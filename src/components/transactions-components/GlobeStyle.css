@@ -1,0 +1,53 @@
+.stars,
+.stars::after {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: transparent;
+  box-shadow:
+    20vw 10vh white,
+    40vw 30vh white,
+    60vw 20vh white,
+    80vw 50vh white,
+    10vw 80vh white,
+    90vw 90vh white,
+    30vw 60vh white,
+    70vw 70vh white,
+    50vw 40vh white;
+  animation: starMove 120s linear infinite;
+  content: '';
+}
+
+.stars {
+  top: 0;
+  left: 0;
+}
+
+.stars::after {
+  top: 100vh;
+}
+
+.stars--medium,
+.stars--medium::after {
+  width: 2px;
+  height: 2px;
+  opacity: 0.6;
+  animation-duration: 180s;
+}
+
+.stars--big,
+.stars--big::after {
+  width: 3px;
+  height: 3px;
+  opacity: 0.4;
+  animation-duration: 240s;
+}
+
+@keyframes starMove {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100vh);
+  }
+}
