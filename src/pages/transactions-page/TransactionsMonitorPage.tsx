@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import GlobeComponent from '../../components/transactions-components/Globe'
 import Navbar from '../../components/navbar-components/NavBar'
 
-function TransactionsPage() {
+function TransactionsMonitorPage() {
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
     dispositivo: '',
@@ -242,4 +242,4 @@ function TransactionsPage() {
   )
 }
 
-export default TransactionsPage
+export default TransactionsMonitorPage

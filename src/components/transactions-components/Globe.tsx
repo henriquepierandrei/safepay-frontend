@@ -87,7 +87,7 @@ const EarthBase = () => (
         wireframe
         color="white"
         transparent
-        opacity={0.01}
+        opacity={0.0095}
       />
     </mesh>
   </group>
@@ -199,14 +199,14 @@ const TransactionMarker = ({
     >
 
       <mesh>
-        <sphereGeometry args={[0.015, 22, 22]} />
+        <sphereGeometry args={[0.0225, 22, 22]} />
         <meshBasicMaterial color={isSelected ? "#4ade80" : "#307355"} />
       </mesh>
 
 
 
       {isSelected && (
-        <Html center distanceFactor={4}>
+        <Html center distanceFactor={2}>
           <div
             className="rounded-lg border border-white/10  backdrop-blur-sm px-4 py-3 text-white transition-all duration-500 ease-out min-w-[200px]"
             style={{ pointerEvents: 'auto' }}
@@ -376,7 +376,7 @@ const Globe: React.FC<GlobeProps> = ({ transactions }) => {
       </Canvas>
       <button
         onClick={() => setPausedManually((prev) => !prev)}
-        className="absolute bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md transition hover:bg-black/90"
+        className="absolute bottom-6 right-6 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md transition hover:bg-black/90"
       >
         {pausedManually ? 'Play' : 'Pause'}
       </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Layers, Briefcase, Mail, User, ChevronDown, Github, DockIcon, Pipette, Paperclip, BookDashedIcon, LineChart, MonitorPlayIcon, MonitorCog, AlertCircle } from 'lucide-react';
+import { Menu, X, Home, Layers, Briefcase, Mail, User, ChevronDown, Github, DockIcon, Pipette, Paperclip, BookDashedIcon, LineChart, MonitorPlayIcon, MonitorCog, AlertCircle, PipetteIcon, MonitorDot, GalleryHorizontalEnd } from 'lucide-react';
 import Logo from '../../assets/logo.png';
 
 // Types
@@ -198,13 +198,19 @@ const Navbar: React.FC<NavbarProps> = ({
       badge: 'New'
     },
     { 
-      label: 'Features', 
-      href: '', 
-      icon: <Layers className="w-5 h-5" />,
-      submenu: [
-        { label: 'Transações', icon: <MonitorCog />, href: '/transactions' },
-        { label: 'Alertas', icon: <AlertCircle />, href: '/alerts' }
-      ]
+      label: 'Monitoramento', 
+      href: '/transactions-monitor', 
+      icon: <MonitorDot className="w-5 h-5" />,
+    },
+    { 
+      label: 'Transações', 
+      href: '/transactions', 
+      icon: <GalleryHorizontalEnd className="w-5 h-5" />,
+    },
+    { 
+      label: 'Alertas',
+      href: '/alerts', 
+      icon: <AlertCircle className="w-5 h-5" />,
     },
     { 
       label: 'GitHub', 
