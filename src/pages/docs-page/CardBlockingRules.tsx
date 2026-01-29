@@ -161,7 +161,7 @@ const CardBlockingRules: React.FC = () => {
   const totalRules = categories.reduce((acc, cat) => acc + cat.rules.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-zinc-950 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#09140e] to-black">
       <Navbar />
       <br /><br />
       {/* Background Effects - Same as HeroSection */}
@@ -177,7 +177,7 @@ const CardBlockingRules: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-900/30 backdrop-blur-xl border border-emerald-800/30 flex items-center justify-center shadow-lg shadow-emerald-950/30">
+                <div className="w-16 h-16 rounded-4xl bg-emerald-900/30 backdrop-blur-xl border border-emerald-800/30 flex items-center justify-center shadow-lg shadow-emerald-950/30">
                   <Shield className="w-8 h-8 text-emerald-400/70" />
                 </div>
                 <div>
@@ -251,7 +251,7 @@ const CardBlockingRules: React.FC = () => {
 
         {/* Legend */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-          <div className="p-6 rounded-2xl bg-emerald-950/30 border border-emerald-800/20 backdrop-blur-xl">
+          <div className="p-6 rounded-4xl bg-emerald-950/30 border border-emerald-800/20 backdrop-blur-xl">
             <h3 className="text-sm font-semibold text-emerald-300/90 mb-4 flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Legenda de Severidade
@@ -279,7 +279,7 @@ const CardBlockingRules: React.FC = () => {
             {filteredCategories.map((category) => (
               <div
                 key={category.id}
-                className={`rounded-2xl border ${category.borderColor} ${category.bgColor} backdrop-blur-xl overflow-hidden transition-all duration-300 shadow-lg shadow-emerald-950/20 hover:shadow-emerald-900/30`}
+                className={`rounded-4xl border ${category.borderColor} ${category.bgColor} backdrop-blur-xl overflow-hidden transition-all duration-300 shadow-lg shadow-emerald-950/20 hover:shadow-emerald-900/30`}
               >
                 {/* Category Header */}
                 <button
@@ -351,7 +351,7 @@ const CardBlockingRules: React.FC = () => {
           {/* Empty State */}
           {filteredCategories.length === 0 && (
             <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-emerald-950/40 border border-emerald-800/20 backdrop-blur-xl mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-4xl bg-emerald-950/40 border border-emerald-800/20 backdrop-blur-xl mb-6">
                 <Search className="w-10 h-10 text-emerald-400/50" />
               </div>
               <h3 className="text-xl font-semibold text-emerald-200/90 mb-2">Nenhuma regra encontrada</h3>

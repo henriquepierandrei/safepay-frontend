@@ -213,11 +213,6 @@ const Navbar: React.FC<NavbarProps> = ({
       icon: <AlertCircle className="w-5 h-5" />,
     },
     { 
-      label: 'GitHub', 
-      href: 'https://github.com/henriquepierandrei/safepay', 
-      icon: <Github className="w-5 h-5" />
-    },
-    { 
       label: 'Docs', 
       href: '/docs', 
       icon: <Paperclip  className="w-5 h-5" />

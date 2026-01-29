@@ -1,502 +1,761 @@
-import React, { useState } from 'react';
-import { AlertTriangle, CreditCard, MapPin, Smartphone, TrendingUp, Clock, DollarSign, Shield, X, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
-import Navbar from '../../components/navbar-components/NavBar';
+// src/pages/alerts/AlertsPage.tsx
 
-interface FraudReason {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+import React, { useState } from 'react'
+import {
+  AlertTriangle,
+  CreditCard,
+  MapPin,
+  Smartphone,
+  TrendingUp,
+  Clock,
+  DollarSign,
+  Shield,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Filter,
+  RefreshCw,
+  Search,
+  Zap,
+  Globe,
+  Plane,
+  ShieldOff,
+  Cpu,
+  AlertOctagon,
+  XCircle,
+  AlertCircle,
+  Minimize2,
+  RefreshCcw,
+  Fingerprint,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
+} from 'lucide-react'
+import Navbar from '../../components/navbar-components/NavBar'
+import { useFraudAlerts } from '../../hooks/useFraudAlerts'
+import {
+  ALERT_TYPE_INFO,
+  getSeverityConfig,
+  getStatusConfig,
+  type AlertType,
+  type Severity,
+  type FraudAlertResponseDTO,
+  type FraudAlertFilterRequestDTO
+} from '../../types/fraudAlert'
+
+// Mapeamento de ícones
+const IconMap: Record<string, React.ReactNode> = {
+  'dollar-sign': <DollarSign className="w-4 h-4" />,
+  'alert-triangle': <AlertTriangle className="w-4 h-4" />,
+  'zap': <Zap className="w-4 h-4" />,
+  'trending-up': <TrendingUp className="w-4 h-4" />,
+  'map-pin': <MapPin className="w-4 h-4" />,
+  'plane': <Plane className="w-4 h-4" />,
+  'globe': <Globe className="w-4 h-4" />,
+  'smartphone': <Smartphone className="w-4 h-4" />,
+  'fingerprint': <Fingerprint className="w-4 h-4" />,
+  'shield-off': <ShieldOff className="w-4 h-4" />,
+  'credit-card': <CreditCard className="w-4 h-4" />,
+  'clock': <Clock className="w-4 h-4" />,
+  'search': <Search className="w-4 h-4" />,
+  'minimize-2': <Minimize2 className="w-4 h-4" />,
+  'refresh-cw': <RefreshCcw className="w-4 h-4" />,
+  'x-circle': <XCircle className="w-4 h-4" />,
+  'alert-circle': <AlertCircle className="w-4 h-4" />,
+  'cpu': <Cpu className="w-4 h-4" />,
+  'alert-octagon': <AlertOctagon className="w-4 h-4" />,
+  'calendar': <Calendar className="w-4 h-4" />,
 }
 
-interface FraudAlert {
-  id: string;
-  cardNumber: string;
-  cardHolder: string;
-  cardBrand: string;
-  amount: number;
-  location: string;
-  device: string;
-  timestamp: string;
-  riskLevel: 'high' | 'medium' | 'low';
-  reasons: FraudReason[];
+const getAlertIcon = (iconName: string) => {
+  return IconMap[iconName] || <AlertTriangle className="w-4 h-4" />
 }
 
-const AlertsPage = () => {
-  const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
-  const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-  const [dateFilter, setDateFilter] = useState<string>('');
+// Componente de Card de Alerta
+interface AlertCardProps {
+  alert: FraudAlertResponseDTO
+  isExpanded: boolean
+  onToggle: () => void
+}
 
-  // Converter data do formato ISO (yyyy-mm-dd) para dd/mm/yyyy para comparação
-  const formatDateForComparison = (isoDate: string) => {
-    if (!isoDate) return '';
-    const [year, month, day] = isoDate.split('-');
-    return `${day}/${month}/${year}`;
-  };
+const AlertCard: React.FC<AlertCardProps> = ({ alert, isExpanded, onToggle }) => {
+  const severityConfig = getSeverityConfig(alert.severity)
+  const statusConfig = getStatusConfig(alert.status)
 
-  // Função para retornar o ícone SVG da bandeira do cartão
-  const getCardBrandIcon = (brand: string) => {
-    switch (brand) {
-      case 'MASTERCARD':
-        return (
-          <svg viewBox="0 0 48 32" className="w-8 h-6">
-            <circle cx="15" cy="16" r="12" fill="#EB001B"/>
-            <circle cx="33" cy="16" r="12" fill="#F79E1B"/>
-            <path d="M24 8c-2.5 2-4 5-4 8s1.5 6 4 8c2.5-2 4-5 4-8s-1.5-6-4-8z" fill="#FF5F00"/>
-          </svg>
-        );
-      case 'VISA':
-        return (
-          <svg viewBox="0 0 48 32" className="w-8 h-6">
-            <rect width="48" height="32" rx="4" fill="#1434CB"/>
-            <text x="24" y="20" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial">VISA</text>
-          </svg>
-        );
-      case 'AMERICAN_EXPRESS':
-        return (
-          <svg viewBox="0 0 48 32" className="w-8 h-6">
-            <rect width="48" height="32" rx="4" fill="#006FCF"/>
-            <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">AMEX</text>
-          </svg>
-        );
-      case 'ELO':
-        return (
-          <svg viewBox="0 0 48 32" className="w-8 h-6">
-            <rect width="48" height="32" rx="4" fill="#000000"/>
-            <circle cx="12" cy="16" r="6" fill="#FFCB05"/>
-            <circle cx="24" cy="16" r="6" fill="#00A4E0"/>
-            <circle cx="36" cy="16" r="6" fill="#EF4123"/>
-          </svg>
-        );
-      default:
-        return <CreditCard className="w-6 h-6 text-emerald-400/60" />;
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr.replace(' ', 'T'))
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date)
+    } catch {
+      return dateStr
     }
-  };
+  }
 
-  // Dados de exemplo
-  const alerts: FraudAlert[] = [
-    {
-      id: '1',
-      cardNumber: '**** **** **** 4829',
-      cardHolder: 'Maria Silva Santos',
-      cardBrand: 'VISA',
-      amount: 8750.00,
-      location: 'Miami, FL, EUA',
-      device: 'iPhone 14 Pro - iOS 17.2',
-      timestamp: '18/01/2026 14:32',
-      riskLevel: 'high',
-      reasons: [
-        {
-          icon: <DollarSign className="w-5 h-5" />,
-          title: 'Valor Acima da Média',
-          description: 'Transação de R$ 8.750,00 - 340% acima da média mensal de R$ 2.100,00'
-        },
-        {
-          icon: <MapPin className="w-5 h-5" />,
-          title: 'Localização Incomum',
-          description: 'Primeira transação registrada nos EUA. Última compra: São Paulo, BR'
-        },
-        {
-          icon: <Clock className="w-5 h-5" />,
-          title: 'Horário Suspeito',
-          description: 'Transação fora do padrão horário habitual (09h-18h)'
-        }
-      ]
-    },
-    {
-      id: '2',
-      cardNumber: '**** **** **** 7216',
-      cardHolder: 'João Pedro Oliveira',
-      cardBrand: 'MASTERCARD',
-      amount: 450.00,
-      location: 'Guarapari, ES, BR',
-      device: 'Galaxy S23 - Android 14',
-      timestamp: '18/01/2026 09:15',
-      riskLevel: 'medium',
-      reasons: [
-        {
-          icon: <Smartphone className="w-5 h-5" />,
-          title: 'Dispositivo Não Reconhecido',
-          description: 'Primeira transação realizada com este dispositivo'
-        },
-        {
-          icon: <TrendingUp className="w-5 h-5" />,
-          title: 'Padrão de Compra Alterado',
-          description: 'Categoria de produto diferente do histórico de compras'
-        }
-      ]
-    },
-    {
-      id: '3',
-      cardNumber: '**** **** **** 9103',
-      cardHolder: 'Ana Costa Ferreira',
-      cardBrand: 'AMERICAN_EXPRESS',
-      amount: 12500.00,
-      location: 'Londres, Reino Unido',
-      device: 'MacBook Pro - macOS 14',
-      timestamp: '18/01/2026 03:47',
-      riskLevel: 'high',
-      reasons: [
-        {
-          icon: <DollarSign className="w-5 h-5" />,
-          title: 'Valor Extremamente Alto',
-          description: 'Transação de R$ 12.500,00 - 520% acima da média mensal'
-        },
-        {
-          icon: <MapPin className="w-5 h-5" />,
-          title: 'País de Alto Risco',
-          description: 'Transação internacional em região com alto índice de fraude'
-        },
-        {
-          icon: <Clock className="w-5 h-5" />,
-          title: 'Horário de Madrugada',
-          description: 'Transação às 03:47 - fora do padrão habitual do titular'
-        },
-        {
-          icon: <TrendingUp className="w-5 h-5" />,
-          title: 'Múltiplas Tentativas',
-          description: '3 tentativas de transação nos últimos 10 minutos'
-        }
-      ]
-    }
-  ];
-
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'high':
-        return 'from-red-700/80 to-red-800/80';
-      case 'medium':
-        return 'from-yellow-700/80 to-yellow-800/80';
-      case 'low':
-        return 'from-emerald-700/80 to-emerald-800/80';
-      default:
-        return 'from-emerald-700/80 to-emerald-800/80';
-    }
-  };
-
-  const getRiskBorderColor = (level: string) => {
-    switch (level) {
-      case 'high':
-        return 'border-red-800/30';
-      case 'medium':
-        return 'border-yellow-800/30';
-      case 'low':
-        return 'border-emerald-800/30';
-      default:
-        return 'border-emerald-800/30';
-    }
-  };
-
-  const getRiskLabel = (level: string) => {
-    switch (level) {
-      case 'high':
-        return 'Risco Alto';
-      case 'medium':
-        return 'Risco Médio';
-      case 'low':
-        return 'Risco Baixo';
-      default:
-        return 'Risco Desconhecido';
-    }
-  };
-
-  // Filtrar alertas
-  const filteredAlerts = alerts.filter(alert => {
-    const matchesRisk = riskFilter === 'all' || alert.riskLevel === riskFilter;
-    const formattedFilterDate = formatDateForComparison(dateFilter);
-    const matchesDate = !dateFilter || alert.timestamp.startsWith(formattedFilterDate);
-    return matchesRisk && matchesDate;
-  });
+  const formatCurrency = (value?: number) => {
+    if (value === undefined) return 'N/A'
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-emerald-950 to-black py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <Navbar />
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-96 h-96 rounded-full blur-3xl bg-emerald-500/5 -top-48 -left-48 animate-float" />
-        <div className="absolute w-80 h-80 rounded-full blur-3xl bg-emerald-600/5 top-1/3 -right-40 animate-float-delayed" />
-        <div className="absolute w-72 h-72 rounded-full blur-3xl bg-emerald-500/5 bottom-0 left-1/2 animate-float-slow" />
+    <div className="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/80 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden transition-all duration-300 hover:border-emerald-900/50 hover:shadow-emerald-950/20">
+      {/* Header */}
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start gap-4">
+            {/* Severity Icon */}
+            <div className={`p-3 rounded-xl ${severityConfig.bg} border ${severityConfig.border}`}>
+              <AlertTriangle className={`w-5 h-5 ${severityConfig.text}`} />
+            </div>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-semibold text-neutral-100">
+                  Alerta #{alert.id?.slice(0, 8) || 'N/A'}
+                </h3>
+                {/* Status Badge */}
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusConfig.bg} ${statusConfig.border} border ${statusConfig.text}`}>
+                  {statusConfig.label}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-500 line-clamp-1">
+                {alert.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Severity Badge */}
+          <div className={`px-3 py-1.5 rounded-lg ${severityConfig.bg} border ${severityConfig.border} flex items-center gap-2`}>
+            <div className={`w-2 h-2 rounded-full ${severityConfig.dot}`} />
+            <span className={`text-sm font-semibold ${severityConfig.text}`}>
+              {severityConfig.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {/* Fraud Score */}
+          <div className="p-3 rounded-xl bg-black/40 border border-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-4 h-4 text-emerald-600/60" />
+              <span className="text-xs text-neutral-500">Fraud Score</span>
+            </div>
+            <p className="text-lg font-bold text-neutral-100">
+              {alert.fraudScore}
+              <span className="text-xs text-neutral-600 font-normal ml-1">/ 100</span>
+            </p>
+          </div>
+
+          {/* Probabilidade */}
+          <div className="p-3 rounded-xl bg-black/40 border border-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-4 h-4 text-emerald-600/60" />
+              <span className="text-xs text-neutral-500">Probabilidade</span>
+            </div>
+            <p className="text-lg font-bold text-neutral-100">
+              {(alert.fraudProbability * 100).toFixed(1)}%
+            </p>
+          </div>
+
+          {/* Valor */}
+          <div className="p-3 rounded-xl bg-black/40 border border-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-4 h-4 text-emerald-600/60" />
+              <span className="text-xs text-neutral-500">Valor</span>
+            </div>
+            <p className="text-lg font-bold text-neutral-100">
+              {formatCurrency(alert.amount)}
+            </p>
+          </div>
+
+          {/* Data */}
+          <div className="p-3 rounded-xl bg-black/40 border border-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-emerald-600/60" />
+              <span className="text-xs text-neutral-500">Data/Hora</span>
+            </div>
+            <p className="text-sm font-semibold text-neutral-100">
+              {formatDate(alert.createdAt)}
+            </p>
+          </div>
+        </div>
+
+        {/* Alert Types Preview */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {alert.alertTypeList.slice(0, 3).map((type) => {
+            const info = ALERT_TYPE_INFO[type]
+            return (
+              <div
+                key={type}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/50 border border-neutral-800/60 text-xs"
+              >
+                <span className="text-emerald-600/70">{getAlertIcon(info?.icon || 'alert-triangle')}</span>
+                <span className="text-neutral-400">{info?.title || type}</span>
+              </div>
+            )
+          })}
+          {alert.alertTypeList.length > 3 && (
+            <div className="flex items-center px-2.5 py-1 rounded-lg bg-black/50 border border-neutral-800/60 text-xs text-neutral-500">
+              +{alert.alertTypeList.length - 3} mais
+            </div>
+          )}
+        </div>
+
+        {/* Expand Button */}
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center justify-between p-3 rounded-xl bg-black/30 border border-neutral-800/50 hover:bg-emerald-950/20 hover:border-emerald-900/40 transition-all duration-200 group cursor-pointer"
+        >
+          <span className="text-sm font-medium text-neutral-500 group-hover:text-emerald-500/80">
+            Ver Detalhes ({alert.alertTypeList.length} alertas)
+          </span>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-neutral-600 group-hover:text-emerald-500/80" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-neutral-600 group-hover:text-emerald-500/80" />
+          )}
+        </button>
       </div>
 
-      <div className="max-w-6xl mx-auto relative z-10 m-15">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="px-5 pb-5 border-t border-neutral-800/50 pt-4 animate-fadeIn">
+          <h4 className="text-sm font-semibold text-neutral-300 mb-3">
+            Motivos do Alerta
+          </h4>
+          <div className="space-y-2">
+            {alert.alertTypeList.map((type, index) => {
+              const info = ALERT_TYPE_INFO[type]
+              if (!info) return null
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-emerald-400/90 via-emerald-300/80 to-emerald-500/90 bg-clip-text text-transparent">
+              return (
+                <div
+                  key={`${type}-${index}`}
+                  className="p-3 rounded-xl bg-black/40 border border-neutral-800/40 hover:border-emerald-900/30 hover:bg-emerald-950/10 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-950/40 text-emerald-600/80">
+                      {getAlertIcon(info.icon)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h5 className="text-sm font-semibold text-neutral-200">
+                          {info.title}
+                        </h5>
+                        <span className="text-xs text-neutral-600">
+                          Score: {info.riskScore}
+                        </span>
+                      </div>
+                      <p className="text-sm text-neutral-500">
+                        {info.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Additional Info */}
+          {(alert.transactionId || alert.cardId || alert.deviceId) && (
+            <div className="mt-4 pt-4 border-t border-neutral-800/40">
+              <h4 className="text-sm font-semibold text-neutral-300 mb-3">
+                Informações Adicionais
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {alert.transactionId && (
+                  <div className="p-3 rounded-lg bg-black/30 border border-neutral-800/40">
+                    <span className="text-xs text-neutral-600 block mb-1">Transaction ID</span>
+                    <span className="text-sm text-neutral-300 font-mono truncate block">
+                      {alert.transactionId}
+                    </span>
+                  </div>
+                )}
+                {alert.cardId && (
+                  <div className="p-3 rounded-lg bg-black/30 border border-neutral-800/40">
+                    <span className="text-xs text-neutral-600 block mb-1">Card ID</span>
+                    <span className="text-sm text-neutral-300 font-mono truncate block">
+                      {alert.cardId}
+                    </span>
+                  </div>
+                )}
+                {alert.deviceId && (
+                  <div className="p-3 rounded-lg bg-black/30 border border-neutral-800/40">
+                    <span className="text-xs text-neutral-600 block mb-1">Device ID</span>
+                    <span className="text-sm text-neutral-300 font-mono truncate block">
+                      {alert.deviceId}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Componente de Filtros
+interface FiltersProps {
+  filters: FraudAlertFilterRequestDTO
+  onFilterChange: (filters: FraudAlertFilterRequestDTO) => void
+  onClear: () => void
+  onRefresh: () => void
+  loading: boolean
+}
+
+const Filters: React.FC<FiltersProps> = ({
+  filters,
+  onFilterChange,
+  onClear,
+  onRefresh,
+  loading
+}) => {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
+  const handleSeverityChange = (severity: Severity | undefined) => {
+    onFilterChange({ ...filters, severity })
+  }
+
+  const handleDateChange = (field: 'createdAtFrom' | 'createdAtTo', value: string) => {
+    onFilterChange({
+      ...filters,
+      [field]: value ? `${value}T00:00:00` : undefined
+    })
+  }
+
+  const handleAlertTypeToggle = (type: AlertType) => {
+    const currentTypes = filters.alertTypeList || []
+    const newTypes = currentTypes.includes(type)
+      ? currentTypes.filter(t => t !== type)
+      : [...currentTypes, type]
+    
+    onFilterChange({
+      ...filters,
+      alertTypeList: newTypes.length > 0 ? newTypes : undefined
+    })
+  }
+
+  const severities: (Severity | 'ALL')[] = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+  return (
+    <div className="bg-neutral-900/50 backdrop-blur-xl border border-neutral-800/60 rounded-2xl p-5 mb-6">
+      {/* Main Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* Severity Filter */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">
+            Severidade
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {severities.map((sev) => {
+              const isSelected = sev === 'ALL' ? !filters.severity : filters.severity === sev
+              const config = sev === 'ALL' 
+                ? { bg: 'bg-neutral-800/60', border: 'border-neutral-700', text: 'text-neutral-300' }
+                : getSeverityConfig(sev)
+              
+              return (
+                <button
+                  key={sev}
+                  onClick={() => handleSeverityChange(sev === 'ALL' ? undefined : sev)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border cursor-pointer ${
+                    isSelected
+                      ? `${config.bg} ${config.border} ${config.text}`
+                      : 'bg-black/30 border-neutral-800/60 text-neutral-600 hover:bg-neutral-800/40 hover:text-neutral-400'
+                  }`}
+                >
+                  {sev === 'ALL' ? 'Todos' : getSeverityConfig(sev).label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Date From */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">
+            Data Inicial
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              value={filters.createdAtFrom?.split('T')[0] || ''}
+              onChange={(e) => handleDateChange('createdAtFrom', e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60 focus:ring-1 focus:ring-emerald-900/50 transition-all [color-scheme:dark]"
+            />
+            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Date To */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-400 mb-2">
+            Data Final
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              value={filters.createdAtTo?.split('T')[0] || ''}
+              onChange={(e) => handleDateChange('createdAtTo', e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60 focus:ring-1 focus:ring-emerald-900/50 transition-all [color-scheme:dark]"
+            />
+            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Filters Toggle */}
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="flex items-center gap-2 text-sm text-neutral-500 hover:text-emerald-500/80 transition-colors mb-4 cursor-pointer"
+      >
+        <Filter className="w-4 h-4" />
+        Filtros Avançados
+        {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+
+      {/* Advanced Filters */}
+      {showAdvanced && (
+        <div className="pt-4 border-t border-neutral-800/40 animate-fadeIn">
+          <label className="block text-sm font-medium text-neutral-400 mb-3">
+            Tipos de Alerta
+          </label>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {Object.values(ALERT_TYPE_INFO).map((info) => {
+              const isSelected = filters.alertTypeList?.includes(info.type)
+              return (
+                <button
+                  key={info.type}
+                  onClick={() => handleAlertTypeToggle(info.type)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-950/50 border-emerald-800/60 text-emerald-400'
+                      : 'bg-black/30 border-neutral-800/50 text-neutral-600 hover:bg-neutral-800/40 hover:text-neutral-400'
+                  }`}
+                >
+                  {getAlertIcon(info.icon)}
+                  <span>{info.title}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Score Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">
+                Score Mínimo
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={filters.startFraudScore || ''}
+                onChange={(e) => onFilterChange({
+                  ...filters,
+                  startFraudScore: e.target.value ? Number(e.target.value) : undefined
+                })}
+                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">
+                Score Máximo
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={filters.endFraudScore || ''}
+                onChange={(e) => onFilterChange({
+                  ...filters,
+                  endFraudScore: e.target.value ? Number(e.target.value) : undefined
+                })}
+                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60"
+                placeholder="100"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-neutral-800/40">
+        <button
+          onClick={onClear}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/40 transition-all cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+          Limpar Filtros
+        </button>
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-sm font-medium text-emerald-400 hover:bg-emerald-900/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Componente de Paginação
+interface PaginationProps {
+  currentPage: number
+  totalPages: number
+  totalElements: number
+  pageSize: number
+  onPageChange: (page: number) => void
+}
+
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  totalElements,
+  pageSize,
+  onPageChange
+}) => {
+  const startItem = currentPage * pageSize + 1
+  const endItem = Math.min((currentPage + 1) * pageSize, totalElements)
+
+  return (
+    <div className="flex items-center justify-between mt-6 px-2">
+      <p className="text-sm text-neutral-600">
+        Mostrando <span className="font-medium text-neutral-400">{startItem}</span> a{' '}
+        <span className="font-medium text-neutral-400">{endItem}</span> de{' '}
+        <span className="font-medium text-neutral-400">{totalElements}</span> alertas
+      </p>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className="p-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-500 hover:bg-emerald-950/30 hover:border-emerald-900/40 hover:text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-1">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum
+            if (totalPages <= 5) {
+              pageNum = i
+            } else if (currentPage < 3) {
+              pageNum = i
+            } else if (currentPage > totalPages - 4) {
+              pageNum = totalPages - 5 + i
+            } else {
+              pageNum = currentPage - 2 + i
+            }
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                  pageNum === currentPage
+                    ? 'bg-emerald-950/60 border border-emerald-800/50 text-emerald-400'
+                    : 'bg-black/40 border border-neutral-800/60 text-neutral-600 hover:bg-neutral-800/40 hover:text-neutral-400'
+                }`}
+              >
+                {pageNum + 1}
+              </button>
+            )
+          })}
+        </div>
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages - 1}
+          className="p-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-500 hover:bg-emerald-950/30 hover:border-emerald-900/40 hover:text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Página Principal
+const AlertsPage: React.FC = () => {
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null)
+
+  const {
+    alerts,
+    loading,
+    error,
+    totalElements,
+    totalPages,
+    currentPage,
+    pageSize,
+    filters,
+    setFilters,
+    setPage,
+    fetchAlerts,
+    clearFilters
+  } = useFraudAlerts({ autoFetch: true })
+
+  const handleFilterChange = (newFilters: FraudAlertFilterRequestDTO) => {
+    setFilters(newFilters)
+    setPage(0)
+  }
+
+  const handleToggleExpand = (alertId: string) => {
+    setExpandedAlertId(prev => prev === alertId ? null : alertId)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-neutral-950 to-black py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <Navbar />
+
+      {/* Background Effects - Subtle emerald glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-[600px] h-[600px] rounded-full blur-[200px] bg-emerald-950/20 -top-64 -left-64" />
+        <div className="absolute w-[500px] h-[500px] rounded-full blur-[200px] bg-emerald-950/15 top-1/2 -right-64" />
+        <div className="absolute w-[400px] h-[400px] rounded-full blur-[200px] bg-emerald-950/10 bottom-0 left-1/3" />
+      </div>
+
+      {/* Grid Pattern - Darker */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_110%)]" />
+
+      <div className="max-w-7xl mx-auto relative z-10 mt-16">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-950/30 border border-emerald-900/30 mb-6">
+            <Shield className="w-4 h-4 text-emerald-600" />
+            <span className="text-sm text-emerald-500/80">Sistema de Monitoramento</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-neutral-100 via-neutral-300 to-neutral-500 bg-clip-text text-transparent">
               Alertas de Fraude
             </span>
           </h1>
-          <p className="text-lg text-emerald-200/50 max-w-2xl mx-auto">
+          <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
             Monitoramento em tempo real de transações suspeitas
           </p>
         </div>
 
-        {/* Filtros */}
-        <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          {/* Filtro por Risco */}
-          <div className="bg-black/40 backdrop-blur-xl border border-emerald-500/10 rounded-xl p-5 shadow-lg">
-            <label className="block text-sm font-medium text-emerald-400/80 mb-3">
-              Filtrar por Nível de Risco
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setRiskFilter('all')}
-                className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  riskFilter === 'all'
-                    ? 'bg-emerald-700/80 text-white shadow-lg'
-                    : 'border border-emerald-500/30 text-emerald-400/60 hover:scale-105 hover:bg-emerald-900/20'
-                }`}
-              >
-                Todos
-              </button>
-              <button
-                onClick={() => setRiskFilter('high')}
-                className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  riskFilter === 'high'
-                    ? 'border border-none bg-red-700/80 text-white shadow-lg'
-                    : 'border border-red-500/30 text-red-400/60 hover:scale-105 hover:bg-emerald-900/20'
-                }`}
-              >
-                Alto Risco
-              </button>
-              <button
-                onClick={() => setRiskFilter('medium')}
-                className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  riskFilter === 'medium'
-                    ? 'border border-none bg-yellow-700/80 text-white shadow-lg'
-                    : 'border border-yellow-500/30 text-yellow-400/60 hover:scale-105 hover:bg-emerald-900/20'
-                }`}
-              >
-                Médio Risco
-              </button>
-              <button
-                onClick={() => setRiskFilter('low')}
-                className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  riskFilter === 'low'
-                    ? 'border border-none bg-emerald-700/80 text-white shadow-lg'
-                    : 'border border-emerald-500/30 text-emerald-400/60 hover:bg-gray-800 hover:text-emerald-400'
-                }`}
-              >
-                Baixo Risco
-              </button>
-            </div>
+        {/* Stats Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800/60 hover:border-emerald-900/30 transition-colors">
+            <div className="text-2xl font-bold text-neutral-100">{totalElements}</div>
+            <div className="text-sm text-neutral-600">Total de Alertas</div>
           </div>
-
-          {/* Filtro por Data */}
-          <div className="bg-black/40 backdrop-blur-xl border border-emerald-500/10 rounded-xl p-5 shadow-lg">
-            <label htmlFor="date-filter" className="block text-sm font-medium text-emerald-400/80 mb-3">
-              Filtrar por Data
-            </label>
-            <div className="relative">
-              <input
-                id="date-filter"
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-black/40 border border-emerald-500/10 text-emerald-50/80 focus:outline-none focus:border-emerald-500/30 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300 [color-scheme:dark] cursor-pointer"
-              />
-              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400/60 pointer-events-none" />
+          <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800/60 hover:border-red-900/30 transition-colors">
+            <div className="text-2xl font-bold text-red-500">
+              {alerts.filter(a => a.severity === 'CRITICAL' || a.severity === 'HIGH').length}
             </div>
-            {dateFilter && (
-              <button
-                onClick={() => setDateFilter('')}
-                className="mt-2 text-xs text-emerald-400/60 hover:text-emerald-400 transition-colors flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                Limpar filtro
-              </button>
-            )}
+            <div className="text-sm text-neutral-600">Alto Risco</div>
+          </div>
+          <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800/60 hover:border-yellow-900/30 transition-colors">
+            <div className="text-2xl font-bold text-yellow-500">
+              {alerts.filter(a => a.status === 'PENDING').length}
+            </div>
+            <div className="text-sm text-neutral-600">Pendentes</div>
+          </div>
+          <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800/60 hover:border-emerald-900/30 transition-colors">
+            <div className="text-2xl font-bold text-emerald-500">
+              {alerts.reduce((acc, a) => acc + a.fraudScore, 0) / (alerts.length || 1) | 0}
+            </div>
+            <div className="text-sm text-neutral-600">Score Médio</div>
           </div>
         </div>
 
-        {/* Contador de Resultados */}
-        {(riskFilter !== 'all' || dateFilter) && (
-          <div className="mb-6 text-center animate-fade-in">
-            <p className="text-sm text-emerald-400/60">
-              Mostrando <span className="font-semibold text-emerald-400">{filteredAlerts.length}</span> de {alerts.length} alertas
+        {/* Filters */}
+        <Filters
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClear={clearFilters}
+          onRefresh={fetchAlerts}
+          loading={loading}
+        />
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-950/30 border border-red-900/40 text-red-400 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && alerts.length === 0 && (
+          <div className="text-center py-20 bg-neutral-900/50 backdrop-blur-xl border border-neutral-800/60 rounded-2xl">
+            <Shield className="w-16 h-16 mx-auto mb-4 text-neutral-700" />
+            <h3 className="text-xl font-semibold text-neutral-300 mb-2">
+              Nenhum alerta encontrado
+            </h3>
+            <p className="text-neutral-600 mb-6">
+              Tente ajustar os filtros ou aguarde novas transações suspeitas
             </p>
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 rounded-lg bg-emerald-950/50 border border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/40 transition-all cursor-pointer"
+            >
+              Limpar Filtros
+            </button>
           </div>
         )}
 
         {/* Alerts List */}
-        <div className="space-y-6">
-          {filteredAlerts.length === 0 ? (
-            <div className="text-center py-16 bg-black/40 backdrop-blur-xl border border-emerald-500/10 rounded-2xl">
-              <Shield className="w-16 h-16 mx-auto mb-4 text-emerald-400/40" />
-              <h3 className="text-xl font-semibold text-emerald-50/60 mb-2">
-                Nenhum alerta encontrado
-              </h3>
-              <p className="text-emerald-400/40">
-                Tente ajustar os filtros para ver mais resultados
-              </p>
-            </div>
-          ) : (
-            filteredAlerts.map((alert, index) => (
-            <div
-              key={alert.id}
-              className="bg-emerald-950/30 backdrop-blur-xl border border-emerald-800/20 rounded-2xl shadow-lg shadow-emerald-950/20 overflow-hidden animate-slide-up hover:border-emerald-700/30 transition-all duration-300"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              {/* Alert Header */}
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-r ${getRiskColor(alert.riskLevel)} shadow-lg`}>
-                      <AlertTriangle className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-emerald-50/90 mb-1">
-                        {alert.cardHolder}
-                      </h3>
-                      <div className="flex items-center gap-2 text-emerald-300/60">
-                        <div className=" rounded px-2 py-1 flex items-center">
-                          {getCardBrandIcon(alert.cardBrand)}
-                        </div>
-                        <span className="text-sm">{alert.cardNumber}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${getRiskColor(alert.riskLevel)} border ${getRiskBorderColor(alert.riskLevel)}`}>
-                    <span className="text-sm font-semibold text-white">
-                      {getRiskLabel(alert.riskLevel)}
-                    </span>
-                  </div>
-                </div>
+        {!loading && alerts.length > 0 && (
+          <div className="space-y-4">
+            {alerts.map((alert, index) => (
+              <AlertCard
+                key={alert.id || index}
+                alert={alert}
+                isExpanded={expandedAlertId === (alert.id || String(index))}
+                onToggle={() => handleToggleExpand(alert.id || String(index))}
+              />
+            ))}
+          </div>
+        )}
 
-                {/* Transaction Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/25 border border-emerald-500/10">
-                    <DollarSign className="w-5 h-5 text-emerald-400/60" />
-                    <div>
-                      <p className="text-xs text-emerald-300/50">Valor</p>
-                      <p className="text-sm font-semibold text-emerald-50/80">
-                        R$ {alert.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/25 border border-emerald-500/10">
-                    <MapPin className="w-5 h-5 text-emerald-400/60" />
-                    <div>
-                      <p className="text-xs text-emerald-300/50">Localização</p>
-                      <p className="text-sm font-semibold text-emerald-50/80">{alert.location}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/25 border border-emerald-500/10">
-                    <Smartphone className="w-5 h-5 text-emerald-400/60" />
-                    <div>
-                      <p className="text-xs text-emerald-300/50">Dispositivo</p>
-                      <p className="text-sm font-semibold text-emerald-50/80">{alert.device}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/25 border border-emerald-500/10">
-                    <Clock className="w-5 h-5 text-emerald-400/60" />
-                    <div>
-                      <p className="text-xs text-emerald-300/50">Data/Hora</p>
-                      <p className="text-sm font-semibold text-emerald-50/80">{alert.timestamp}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expand Button */}
-                <button
-                  onClick={() => setExpandedAlert(expandedAlert === alert.id ? null : alert.id)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-black/25 border border-emerald-500/10 hover:bg-black/50 hover:border-emerald-500/20 transition-all duration-300 group"
-                >
-                  <span className="text-sm font-medium text-emerald-400/80">
-                    Ver Motivos da Suspeita ({alert.reasons.length})
-                  </span>
-                  {expandedAlert === alert.id ? (
-                    <ChevronUp className="w-5 h-5 text-emerald-400/60 group-hover:text-emerald-400/80 transition-colors" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-emerald-400/60 group-hover:text-emerald-400/80 transition-colors" />
-                  )}
-                </button>
-              </div>
-
-              {/* Expanded Reasons */}
-              {expandedAlert === alert.id && (
-                <div className="px-6 pb-6 space-y-3 animate-slide-up">
-                  {alert.reasons.map((reason, reasonIndex) => (
-                    <div
-                      key={reasonIndex}
-                      className="p-4 rounded-xl bg-black/30 border border-emerald-500/10"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400/70">
-                          {reason.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-emerald-50/90 mb-1">
-                            {reason.title}
-                          </h4>
-                          <p className="text-sm text-emerald-300/60">
-                            {reason.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))
-          )}
-        </div>
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-30px) rotate(5deg); }
-        }
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(-5deg); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-40px) rotate(3deg); }
-        }
-        @keyframes fade-in {
+        @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-        .animate-float-delayed {
-          animation: float-delayed 6s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 10s ease-in-out infinite;
-        }
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out;
-        }
-        .animate-slide-up {
-          animation: slide-up 0.8s ease-out;
-        }
-        
-        /* Estilização do calendário nativo */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-          opacity: 0;
-          cursor: pointer;
-          width: 100%;
-          height: 100%;
-          position: absolute;
-          left: 0;
-          top: 0;
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default AlertsPage;
+export default AlertsPage

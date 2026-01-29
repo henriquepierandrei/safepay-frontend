@@ -1,3 +1,5 @@
+// src/pages/transactions/Transactions.tsx
+
 import React, { useState } from 'react';
 import { 
   CreditCard, 
@@ -17,87 +19,14 @@ import {
   TrendingUp
 } from 'lucide-react';
 import Navbar from '../../components/navbar-components/NavBar';
-
-interface Transaction {
-  transactionId: string;
-  card: {
-    cardNumber: string;
-    cardholderName: string;
-  };
-  merchantCategory: string;
-  amount: number;
-  transactionDateAndTime: string;
-  latitude: string;
-  longitude: string;
-  device: {
-    deviceType: 'MOBILE' | 'DESKTOP' | 'TABLET';
-    deviceName: string;
-  };
-  ipAddress: string;
-  transactionStatus: 'APPROVED' | 'PENDING' | 'DECLINED';
-  isFraud: boolean;
-}
-
+import { useWebSocket } from '../../hooks/useWebSocket';
+import type { Transaction } from '../../types/transaction';
 
 const Transactions: React.FC = () => {
+  const { transactions, isConnected, error } = useWebSocket();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
-
-  const mockTransactions: Transaction[] = [
-    {
-      transactionId: '550e8400-e29b-41d4-a716-446655440001',
-      card: { cardNumber: '**** **** **** 1234', cardholderName: 'João Silva' },
-      merchantCategory: 'GROCERY',
-      amount: 245.80,
-      transactionDateAndTime: '2026-01-21T14:30:00',
-      latitude: '-19.9167',
-      longitude: '-43.9345',
-      device: { deviceType: 'MOBILE', deviceName: 'iPhone 14 Pro' },
-      ipAddress: '192.168.1.100',
-      transactionStatus: 'APPROVED',
-      isFraud: false
-    },
-    {
-      transactionId: '550e8400-e29b-41d4-a716-446655440002',
-      card: { cardNumber: '**** **** **** 1234', cardholderName: 'João Silva' },
-      merchantCategory: 'ELECTRONICS',
-      amount: 1299.99,
-      transactionDateAndTime: '2026-01-21T12:15:00',
-      latitude: '-19.9167',
-      longitude: '-43.9345',
-      device: { deviceType: 'DESKTOP', deviceName: 'Windows PC' },
-      ipAddress: '192.168.1.101',
-      transactionStatus: 'PENDING',
-      isFraud: false
-    },
-    {
-      transactionId: '550e8400-e29b-41d4-a716-446655440003',
-      card: { cardNumber: '**** **** **** 1234', cardholderName: 'João Silva' },
-      merchantCategory: 'ENTERTAINMENT',
-      amount: 89.90,
-      transactionDateAndTime: '2026-01-20T19:45:00',
-      latitude: '-19.9167',
-      longitude: '-43.9345',
-      device: { deviceType: 'TABLET', deviceName: 'iPad Air' },
-      ipAddress: '192.168.1.102',
-      transactionStatus: 'APPROVED',
-      isFraud: false
-    },
-    {
-      transactionId: '550e8400-e29b-41d4-a716-446655440004',
-      card: { cardNumber: '**** **** **** 1234', cardholderName: 'João Silva' },
-      merchantCategory: 'TRAVEL',
-      amount: 2500.00,
-      transactionDateAndTime: '2026-01-20T08:20:00',
-      latitude: '-22.9068',
-      longitude: '-43.1729',
-      device: { deviceType: 'MOBILE', deviceName: 'Samsung Galaxy S23' },
-      ipAddress: '203.0.113.45',
-      transactionStatus: 'DECLINED',
-      isFraud: true
-    }
-  ];
 
   const getDeviceIcon = (deviceType: string) => {
     switch (deviceType) {
@@ -162,7 +91,7 @@ const Transactions: React.FC = () => {
     }).format(amount);
   };
 
-  const filteredTransactions = mockTransactions.filter(transaction => {
+  const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = 
       transaction.card.cardNumber.includes(searchTerm) ||
       transaction.merchantCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,10 +112,23 @@ const Transactions: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#09140e] to-black">
-        
       <Navbar />
       
-      {/* Background Effects - iOS Glass Style */}
+      {/* WebSocket Status */}
+      <div className="fixed top-20 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 backdrop-blur-md border border-white/10">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+        <span className="text-xs text-white font-medium">
+          {isConnected ? 'Conectado' : 'Desconectado'}
+        </span>
+      </div>
+
+      {error && (
+        <div className="fixed top-32 right-4 z-50 px-4 py-2 rounded-lg bg-red-500/20 backdrop-blur-md border border-red-500/30 text-red-400 text-sm max-w-md">
+          {error}
+        </div>
+      )}
+      
+      {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 rounded-full blur-3xl bg-emerald-500/10 top-10 left-1/4 animate-pulse-slow" />
         <div className="absolute w-80 h-80 rounded-full blur-3xl bg-emerald-400/5 bottom-20 right-1/4 animate-pulse-slower" />
@@ -204,7 +146,7 @@ const Transactions: React.FC = () => {
             </h1>
           </div>
           <p className="text-gray-400">
-            Visualize e gerencie todas as transações do cartão
+            Visualize e gerencie todas as transações do cartão em tempo real
           </p>
         </div>
 
@@ -238,7 +180,6 @@ const Transactions: React.FC = () => {
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
@@ -250,7 +191,6 @@ const Transactions: React.FC = () => {
               />
             </div>
 
-            {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="px-6 py-3 rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10 text-gray-300 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
@@ -261,7 +201,6 @@ const Transactions: React.FC = () => {
             </button>
           </div>
 
-          {/* Filter Options */}
           {showFilters && (
             <div className="p-4 rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10 animate-slide-down">
               <div className="flex flex-wrap gap-2">
@@ -269,7 +208,6 @@ const Transactions: React.FC = () => {
                   { value: 'all', label: 'Todas' },
                   { value: 'approved', label: 'Aprovadas' },
                   { value: 'pending', label: 'Pendentes' },
-                  { value: 'declined', label: 'Recusadas' },
                   { value: 'fraud', label: 'Fraudes' }
                 ].map((filter) => (
                   <button
@@ -294,16 +232,17 @@ const Transactions: React.FC = () => {
           {filteredTransactions.length === 0 ? (
             <div className="p-12 text-center rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10">
               <Shield className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">Nenhuma transação encontrada</p>
+              <p className="text-gray-400 text-lg">
+                {isConnected ? 'Aguardando transações...' : 'Conectando ao servidor...'}
+              </p>
             </div>
           ) : (
             filteredTransactions.map((transaction) => (
               <div
                 key={transaction.transactionId}
-                className="p-4 sm:p-6 rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
+                className="p-4 sm:p-6 rounded-xl bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all animate-slide-in"
               >
                 <div className="flex flex-col gap-4">
-                  {/* Top Section */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
@@ -317,7 +256,6 @@ const Transactions: React.FC = () => {
                       </p>
                     </div>
                     
-                    {/* Amount */}
                     <div className="text-right flex-shrink-0">
                       <p className="text-xl sm:text-2xl font-bold text-white whitespace-nowrap">
                         {formatCurrency(transaction.amount)}
@@ -325,7 +263,6 @@ const Transactions: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Bottom Section - Details */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-400 pt-3 border-t border-white/5">
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
                       <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -357,6 +294,10 @@ const Transactions: React.FC = () => {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes slide-in {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
         @keyframes pulse-slow {
           0%, 100% { opacity: 0.3; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.05); }
@@ -367,6 +308,9 @@ const Transactions: React.FC = () => {
         }
         .animate-slide-down {
           animation: slide-down 0.3s ease-out;
+        }
+        .animate-slide-in {
+          animation: slide-in 0.4s ease-out;
         }
         .animate-pulse-slow {
           animation: pulse-slow 8s ease-in-out infinite;

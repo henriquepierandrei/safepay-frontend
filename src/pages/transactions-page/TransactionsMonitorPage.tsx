@@ -33,7 +33,7 @@ function TransactionsMonitorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-[#03160a] to-black">
+    <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#09140e] to-black">
       <Navbar />
       <GlobeComponent transactions={[
         { lat: 37.7749, lng: -122.4194, cardBrand: 'Visa', ipAddress: '192.168.1.1' },
@@ -43,32 +43,6 @@ function TransactionsMonitorPage() {
         { lat: 35.6895, lng: 139.6917, cardBrand: 'Mastercard', ipAddress: '192.168.1.5' },
       ]} />
 
-      {/* Botões centralizados na parte inferior - Responsivo */}
-      <div className="fixed bottom-6 sm:bottom-10 left-0 right-0 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 z-10 px-4">
-        <button
-          onClick={handleRandomTransaction}
-          className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-emerald-950/40 backdrop-blur-xl border border-emerald-800/20 text-emerald-400/80 font-semibold rounded-full shadow-lg shadow-emerald-950/20 hover:bg-emerald-900/40 hover:border-emerald-700/30 hover:scale-105 transition-all duration-300 overflow-hidden"
-        >
-          <span className="relative flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span className="text-sm sm:text-base">Gerar Transação Aleatória</span>
-          </span>
-        </button>
-        
-        <button
-          onClick={handleManualTransaction}
-          className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-emerald-950/40 backdrop-blur-xl border border-emerald-800/20 text-emerald-400/80 font-semibold rounded-full shadow-lg shadow-emerald-950/20 hover:bg-emerald-900/40 hover:border-emerald-700/30 hover:scale-105 transition-all duration-300 overflow-hidden"
-        >
-          <span className="relative flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="text-sm sm:text-base">Gerar Transação Manual</span>
-          </span>
-        </button>
-      </div>
 
       {/* Modal com backdrop animado - Responsivo */}
       {showModal && (
