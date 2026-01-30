@@ -382,37 +382,7 @@ const Filters: React.FC<FiltersProps> = ({
           </div>
         </div>
 
-        {/* Date From */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-400 mb-2">
-            Data Inicial
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              value={filters.createdAtFrom?.split('T')[0] || ''}
-              onChange={(e) => handleDateChange('createdAtFrom', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60 focus:ring-1 focus:ring-emerald-900/50 transition-all [color-scheme:dark]"
-            />
-            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Date To */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-400 mb-2">
-            Data Final
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              value={filters.createdAtTo?.split('T')[0] || ''}
-              onChange={(e) => handleDateChange('createdAtTo', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-neutral-800/60 text-neutral-200 text-sm focus:outline-none focus:border-emerald-800/60 focus:ring-1 focus:ring-emerald-900/50 transition-all [color-scheme:dark]"
-            />
-            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 pointer-events-none" />
-          </div>
-        </div>
+        
       </div>
 
       {/* Advanced Filters Toggle */}
@@ -619,7 +589,7 @@ const AlertsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-neutral-950 to-black py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#09140e] to-black py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <Navbar />
 
       {/* Background Effects - Subtle emerald glow */}
